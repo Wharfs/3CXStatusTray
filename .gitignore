@@ -1,0 +1,8 @@
+################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs
+3CXStatusTray/bin/Debug
+3CXStatusTray/obj
+3CXStatusTray/3cxpscomcpp2.dll
