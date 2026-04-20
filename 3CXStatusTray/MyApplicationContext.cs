@@ -38,6 +38,17 @@ internal sealed class MyApplicationContext : ApplicationContext
         _settings = config.GetRequiredSection("Settings").Get<Settings>()
             ?? throw new InvalidOperationException("Settings section missing from appsettings.json");
 
+        // Defensive bounds on PollIntervalMilliseconds. We've seen absurd values
+        // (1,253,924 ms = ~21 minutes) make it into appsettings.json via a
+        // registry-roundtrip bug in the installer. If that happens again, clamp
+        // to a sane range rather than let the tray sit silent for minutes on
+        // end. Floor 500ms (anything lower DoS's the WebApi), ceiling 300000ms
+        // (5 minutes; longer and the shared-state-indicator stops being useful).
+        if (_settings.PollIntervalMilliseconds < 500 || _settings.PollIntervalMilliseconds > 300_000)
+        {
+            _settings.PollIntervalMilliseconds = 5000;
+        }
+
         // Two providers: a console provider (invisible in a WinForms app -
         // stdout is detached - but cheap to keep for anyone running under a
         // debugger) and the opt-in FileLogger that the Enable logging menu

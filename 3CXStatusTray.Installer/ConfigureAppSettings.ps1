@@ -58,13 +58,21 @@ Set-Content -Path $appSettingsPath -Value $json -Encoding UTF8
 Write-Output "ConfigureAppSettings: wrote $appSettingsPath"
 
 # Upgrade-memory registry values. Read back next install via
-# <RegistrySearch> in Product.wxs.
+# <RegistrySearch Type="raw"> in Product.wxs.
+#
+# EVERYTHING stored as REG_SZ (string) on purpose. Set-ItemProperty
+# without -Type infers type from value; .NET [int] -> REG_DWORD. WiX
+# Type="raw" reads REG_DWORD back as '#N' (the MSI-native integer
+# format), which then doesn't round-trip cleanly through a PowerShell
+# [int] param on the next install - cf. the 1253924 ms bug caused by
+# exactly this. Force -Type String on everything so what we write is
+# what the next install reads back, no type gymnastics.
 $regPath = 'HKLM:\SOFTWARE\3CXStatusTray\Config'
 if (-not (Test-Path $regPath)) {
   New-Item -Path $regPath -Force | Out-Null
 }
-Set-ItemProperty -Path $regPath -Name 'ServerUrl'     -Value $ServerUrl
-Set-ItemProperty -Path $regPath -Name 'ApiKey'        -Value $ApiKey
-Set-ItemProperty -Path $regPath -Name 'ExtensionId'   -Value $ExtensionId
-Set-ItemProperty -Path $regPath -Name 'PollIntervalMs' -Value $PollIntervalMs
+Set-ItemProperty -Path $regPath -Name 'ServerUrl'      -Value "$ServerUrl"     -Type String
+Set-ItemProperty -Path $regPath -Name 'ApiKey'         -Value "$ApiKey"        -Type String
+Set-ItemProperty -Path $regPath -Name 'ExtensionId'    -Value "$ExtensionId"   -Type String
+Set-ItemProperty -Path $regPath -Name 'PollIntervalMs' -Value "$PollIntervalMs" -Type String
 Write-Output "ConfigureAppSettings: wrote upgrade-memory registry under $regPath"
