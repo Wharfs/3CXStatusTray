@@ -17,7 +17,9 @@ internal sealed class MyApplicationContext : ApplicationContext
     private readonly ILogger<MyApplicationContext> _logger;
     private readonly NotifyIcon _trayIcon;
     private readonly Timer _pollTimer;
+    private ToolStripMenuItem? _logToggleItem;
     private string? _lastStatus;
+    private bool _hasPolled;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -36,8 +38,18 @@ internal sealed class MyApplicationContext : ApplicationContext
         _settings = config.GetRequiredSection("Settings").Get<Settings>()
             ?? throw new InvalidOperationException("Settings section missing from appsettings.json");
 
+        // Two providers: a console provider (invisible in a WinForms app -
+        // stdout is detached - but cheap to keep for anyone running under a
+        // debugger) and the opt-in FileLogger that the Enable logging menu
+        // item flips on/off at runtime. Nothing is written until the user
+        // explicitly enables it.
         _logger = LoggerFactory
-            .Create(b => b.AddSimpleConsole(o => o.SingleLine = true))
+            .Create(b =>
+            {
+                b.AddSimpleConsole(o => o.SingleLine = true);
+                b.AddProvider(new FileLoggerProvider());
+                b.SetMinimumLevel(LogLevel.Information);
+            })
             .CreateLogger<MyApplicationContext>();
 
         _httpClient = new HttpClient { BaseAddress = new Uri(_settings.ServerURLBasePath) };
@@ -48,7 +60,11 @@ internal sealed class MyApplicationContext : ApplicationContext
 
         _trayIcon = InitializeTrayIcon();
 
-        Application.ApplicationExit += (_, _) => _trayIcon.Visible = false;
+        Application.ApplicationExit += (_, _) =>
+        {
+            _trayIcon.Visible = false;
+            FileLogger.Disable();
+        };
 
         _pollTimer = new Timer { Interval = _settings.PollIntervalMilliseconds, Enabled = true };
         _pollTimer.Tick += async (_, _) => await PollAndUpdateAsync();
@@ -57,6 +73,13 @@ internal sealed class MyApplicationContext : ApplicationContext
     private NotifyIcon InitializeTrayIcon()
     {
         var contextMenu = new ContextMenuStrip();
+
+        _logToggleItem = new ToolStripMenuItem("Enable logging");
+        _logToggleItem.Click += (_, _) => ToggleLogging();
+        contextMenu.Items.Add(_logToggleItem);
+
+        contextMenu.Items.Add(new ToolStripSeparator());
+
         var exitItem = new ToolStripMenuItem("Exit");
         exitItem.Click += (_, _) =>
         {
@@ -87,12 +110,59 @@ internal sealed class MyApplicationContext : ApplicationContext
         return icon;
     }
 
+    private void ToggleLogging()
+    {
+        if (_logToggleItem is null) return;
+
+        if (FileLogger.IsEnabled)
+        {
+            var path = FileLogger.CurrentPath;
+            FileLogger.Disable();
+            _logToggleItem.Text = "Enable logging";
+            MessageBox.Show(
+                $"Logging stopped.\n\nLog file saved to:\n{path}\n\nThe log is a plain text file; open it with Notepad.",
+                "3CX Status Tray",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+        else
+        {
+            var dir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "3CXStatusTray");
+            var path = Path.Combine(dir, $"tray-{DateTime.Now:yyyyMMdd-HHmmss}.log");
+            FileLogger.Enable(path);
+            _logToggleItem.Text = $"Stop logging  ({Path.GetFileName(path)})";
+            _logger.LogInformation(
+                "Logging started. Config: ServerURL={ServerURL}  Extension={ExtensionId}  PollInterval={PollMs}ms  ApiKeySet={HasKey}",
+                _settings.ServerURLBasePath,
+                _settings.ExtensionId,
+                _settings.PollIntervalMilliseconds,
+                !string.IsNullOrEmpty(_settings.ApiKey));
+            _logger.LogInformation("Last known status: {LastStatus}", _lastStatus ?? "<none yet>");
+        }
+    }
+
     private async Task PollAndUpdateAsync()
     {
         var response = await GetExtensionStatusAsync();
         var current = response?.Message;
-        if (current == _lastStatus) return;
+        _logger.LogInformation("Poll response: Message={Message} Status={Status}",
+            current ?? "<null>", response?.Status ?? "<null>");
 
+        // Always update on the very first poll so the tray tooltip/icon
+        // reflect whatever the service returned, even if that's null (the
+        // grey 'unknown' icon). Without this the first poll silently
+        // no-ops when the response happens to equal the initial
+        // _lastStatus (both null), leaving the tray stuck on the default
+        // 'Status information' tooltip forever.
+        if (_hasPolled && current == _lastStatus)
+        {
+            _logger.LogInformation("No change since last poll; skipping UI update");
+            return;
+        }
+
+        _hasPolled = true;
         _lastStatus = current;
         UpdateTrayDisplay(current);
     }
@@ -110,15 +180,21 @@ internal sealed class MyApplicationContext : ApplicationContext
             _               => _settings.ProfileShortCodes.Available
         };
 
+        _logger.LogInformation("Toggle requested; current={Current}  target={Target}",
+            _lastStatus ?? "<unknown>", targetShortCode);
+
         _trayIcon.BalloonTipText = $"Setting status to: {targetShortCode}";
         var set = await SetAllExtensionsAsync(targetShortCode);
         if (set is null)
         {
             _lastStatus = null;
             _trayIcon.BalloonTipText = "Failed to set status - check service";
+            _logger.LogWarning("setAllExtensions returned null - service unreachable or errored");
         }
         else
         {
+            _logger.LogInformation("setAllExtensions response: Message={Message} Status={Status}",
+                set.Message ?? "<null>", set.Status ?? "<null>");
             await PollAndUpdateAsync();
         }
         _trayIcon.ShowBalloonTip(_settings.BalloonTipDisplayMilliseconds);
@@ -139,8 +215,13 @@ internal sealed class MyApplicationContext : ApplicationContext
                 _trayIcon.Icon = LoadIcon(_settings.Icons.OutOfOffice);
                 break;
             default:
-                _trayIcon.BalloonTipText = "Current status: Unexpected profile";
-                _trayIcon.Text = "Current status: unknown";
+                // Show the actual status string (e.g. "Away", "Custom 1",
+                // "unknown") so hovering reveals why we're on the grey
+                // icon - previously this just said "unknown" regardless,
+                // which was unhelpful.
+                var display = string.IsNullOrEmpty(status) ? "unknown (no response)" : status;
+                _trayIcon.BalloonTipText = $"Current status: {display} (no tray colour for this profile)";
+                _trayIcon.Text = $"Current status: {display}";
                 _trayIcon.Icon = LoadIcon(_settings.Icons.Default);
                 break;
         }
@@ -174,6 +255,11 @@ internal sealed class MyApplicationContext : ApplicationContext
         catch (TaskCanceledException ex)
         {
             _logger.LogWarning(ex, "{Method} {Path} timed out", method, path);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "{Method} {Path} unexpected error", method, path);
             return null;
         }
     }
