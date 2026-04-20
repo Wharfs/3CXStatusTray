@@ -30,4 +30,15 @@
     <PackageReference Include="WixToolset.Dtf.CustomAction" Version="6.0.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!--
+      CustomAction.config tells the SfxCA loader which .NET runtime to host.
+      MakeSfxCA bundles this file if it's next to the output DLL at packing
+      time, so copy it to output.
+    -->
+    <Content Include="CustomAction.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
