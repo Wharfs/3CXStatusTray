@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write  # needed to create/update the release
+
+jobs:
+  build-and-release:
+    name: Build MSI and attach to release
+    # Tray targets net8.0-windows + Windows Forms, MSI build needs WiX DTF's
+    # Windows-only MakeSfxCA - neither works on linux/macOS runners.
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Verify tag matches installer version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}".TrimStart('v')
+          $wixproj = Get-Content 3CXStatusTray.Installer/3CXStatusTray.Installer.wixproj -Raw
+          if ($wixproj -match '<Version>([0-9]+\.[0-9]+\.[0-9]+)</Version>') {
+            $projVersion = $matches[1]
+            if ($tag -ne $projVersion) {
+              Write-Error "Tag v$tag does not match wixproj Version $projVersion. Bump <Version> before tagging."
+              exit 1
+            }
+            Write-Host "Tag v$tag matches wixproj Version $projVersion"
+          } else {
+            Write-Error "Could not parse <Version> from wixproj"
+            exit 1
+          }
+
+      - name: Build
+        shell: pwsh
+        run: .\build.ps1
+
+      - name: Create GitHub Release and attach MSI
+        uses: softprops/action-gh-release@v2
+        with:
+          files: 3CXStatusTray.Installer/bin/Release/*.msi
+          generate_release_notes: true
+          draft: false
+          prerelease: false
