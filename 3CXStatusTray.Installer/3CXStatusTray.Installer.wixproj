@@ -7,8 +7,15 @@
     <InstallerPlatform>x64</InstallerPlatform>
     <!-- ICE61 fires for AllowSameVersionUpgrades; suppress, documented as safe. -->
     <SuppressIces>ICE61</SuppressIces>
-    <!-- Define a preprocessor variable so Product.wxs can interpolate it. -->
-    <DefineConstants>Version=$(Version)</DefineConstants>
+
+    <!--
+      WiX v6 no longer auto-creates $(var.ProjectName.TargetDir) /
+      TargetPath preprocessor variables from <ProjectReference>. Define
+      them manually here; referenced as $(var.Name) inside .wxs files.
+    -->
+    <TrayBuildDir>$(MSBuildThisFileDirectory)..\3CXStatusTray\bin\$(Configuration)\net8.0-windows\</TrayBuildDir>
+    <CustomActionDll>$(MSBuildThisFileDirectory)..\3CXStatusTray.Installer.CustomActions\bin\$(Configuration)\net472\WriteAppSettings.CA.dll</CustomActionDll>
+    <DefineConstants>Version=$(Version);TrayBuildDir=$(TrayBuildDir);CustomActionDll=$(CustomActionDll)</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

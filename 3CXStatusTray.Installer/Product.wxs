@@ -106,9 +106,9 @@
     -->
     <Fragment>
       <ComponentGroup Id="TrayPayload" Directory="INSTALLFOLDER">
-        <Files Include="$(var.3CXStatusTray.TargetDir)**\*">
-          <Exclude Files="$(var.3CXStatusTray.TargetDir)appsettings.json" />
-          <Exclude Files="$(var.3CXStatusTray.TargetDir)**\*.pdb" />
+        <Files Include="$(var.TrayBuildDir)**\*">
+          <Exclude Files="$(var.TrayBuildDir)appsettings.json" />
+          <Exclude Files="$(var.TrayBuildDir)**\*.pdb" />
         </Files>
       </ComponentGroup>
     </Fragment>
@@ -160,8 +160,7 @@
     </Component>
 
     <!-- Custom Action wiring -->
-    <Binary Id="WriteAppSettingsCA"
-            SourceFile="$(var.3CXStatusTray.Installer.CustomActions.TargetPath)" />
+    <Binary Id="WriteAppSettingsCA" SourceFile="$(var.CustomActionDll)" />
 
     <!--
       CustomActionData is how deferred CAs receive MSI property values:
