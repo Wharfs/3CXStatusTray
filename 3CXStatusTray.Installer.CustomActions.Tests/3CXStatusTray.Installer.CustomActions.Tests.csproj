@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
+    <PackageReference Include="xunit" Version="2.9.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Pull in only the pure AppSettingsWriter source file so the test project
+      can run on Linux. A ProjectReference would drag in the net472 target
+      framework and the WiX DTF packages, which don't build on Linux and
+      pollute the unit-test surface area.
+    -->
+    <Compile Include="..\3CXStatusTray.Installer.CustomActions\AppSettingsWriter.cs" Link="Linked\AppSettingsWriter.cs" />
+  </ItemGroup>
+
+</Project>

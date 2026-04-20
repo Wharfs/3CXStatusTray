@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      Managed Custom Action for WiX v6. Targets net472 because the WiX
+      DTF custom-action host loads under the legacy .NET Framework loader
+      hosted by the MSI engine. Using a newer target framework here is
+      possible but requires distributing extra runtime files; net472
+      is already present on every supported Windows install (7 SP1+).
+    -->
+    <TargetFramework>net472</TargetFramework>
+    <RootNamespace>WriteAppSettings</RootNamespace>
+    <AssemblyName>WriteAppSettings.CA</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <!-- WiX DTF packages the output with MakeSfxCA at build time. -->
+    <GenerateCASfx>true</GenerateCASfx>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.Dtf.CustomAction" Version="6.0.2" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+
+</Project>

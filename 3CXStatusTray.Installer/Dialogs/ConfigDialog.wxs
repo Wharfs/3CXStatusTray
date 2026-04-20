@@ -1,0 +1,75 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+
+  <!--
+    Custom dialog inserted into WixUI_InstallDir between the License
+    agreement and the Install-directory dialog. Exposes two fields:
+      - SERVER_URL   (3CX Status WebApi URL)
+      - API_KEY      (optional)
+
+    Navigation re-routing:
+      LicenseAgreementDlg  Next -> ConfigDlg   (only when LicenseAccepted=1)
+      ConfigDlg            Back -> LicenseAgreementDlg
+      ConfigDlg            Next -> InstallDirDlg
+      InstallDirDlg        Back -> ConfigDlg
+
+    Publish Order="3" overrides the default (Order="2") Publish elements
+    that WixUI_InstallDir declares internally, which is the standard WiX
+    way to subclass a built-in dialog flow.
+  -->
+  <Fragment>
+    <UI Id="ConfigDialogUI">
+
+      <Publish Dialog="LicenseAgreementDlg" Control="Next" Event="NewDialog"
+               Value="ConfigDlg" Order="3" Condition="LicenseAccepted = &quot;1&quot;" />
+
+      <Publish Dialog="ConfigDlg" Control="Back" Event="NewDialog"
+               Value="LicenseAgreementDlg" Order="3" />
+      <Publish Dialog="ConfigDlg" Control="Next" Event="NewDialog"
+               Value="InstallDirDlg" Order="3" />
+
+      <Publish Dialog="InstallDirDlg" Control="Back" Event="NewDialog"
+               Value="ConfigDlg" Order="3" />
+
+      <Dialog Id="ConfigDlg" Width="370" Height="270" Title="[ProductName] Setup">
+
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44"
+                 TabSkip="no" Text="!(loc.InstallDirDlgBannerBitmap)" />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
+
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="300" Height="15"
+                 Transparent="yes" NoPrefix="yes"
+                 Text="{\WixUI_Font_Title}Configure 3CX Status Tray" />
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="340" Height="15"
+                 Transparent="yes" NoPrefix="yes"
+                 Text="Set the WebApi URL the tray will poll, and an optional API key." />
+
+        <Control Id="ServerUrlLabel" Type="Text" X="45" Y="65" Width="280" Height="12"
+                 NoPrefix="yes" Text="3CX Status &amp;WebApi URL:" />
+        <Control Id="ServerUrlEdit" Type="Edit" X="45" Y="80" Width="280" Height="18"
+                 Property="SERVER_URL" Text="{200}" />
+
+        <Control Id="ApiKeyLabel" Type="Text" X="45" Y="112" Width="280" Height="12"
+                 NoPrefix="yes" Text="API &amp;Key (optional):" />
+        <Control Id="ApiKeyEdit" Type="Edit" X="45" Y="127" Width="280" Height="18"
+                 Property="API_KEY" Text="{200}" />
+
+        <Control Id="HelpText" Type="Text" X="45" Y="155" Width="280" Height="30"
+                 NoPrefix="yes"
+                 Text="Leave the API Key blank if the WebApi isn't using key auth. Both values can be overridden at silent install via SERVER_URL= and API_KEY= properties." />
+
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+
+        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17"
+                 Text="!(loc.WixUIBack)" />
+        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17"
+                 Default="yes" Text="!(loc.WixUINext)" />
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17"
+                 Cancel="yes" Text="!(loc.WixUICancel)">
+          <Publish Event="SpawnDialog" Value="CancelDlg" />
+        </Control>
+
+      </Dialog>
+
+    </UI>
+  </Fragment>
+</Wix>

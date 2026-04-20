@@ -1,0 +1,37 @@
+<Project Sdk="WixToolset.Sdk/6.0.2">
+
+  <PropertyGroup>
+    <OutputType>Package</OutputType>
+    <Version>1.0.0</Version>
+    <OutputName>3CXStatusTray-$(Version)</OutputName>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <!-- ICE61 fires for AllowSameVersionUpgrades; suppress, documented as safe. -->
+    <SuppressIces>ICE61</SuppressIces>
+    <!-- Define a preprocessor variable so Product.wxs can interpolate it. -->
+    <DefineConstants>Version=$(Version)</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" Version="6.0.2" />
+    <PackageReference Include="WixToolset.Util.wixext" Version="6.0.2" />
+    <PackageReference Include="WixToolset.NetFx.wixext" Version="6.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Both project references are required to build the MSI:
+        - 3CXStatusTray supplies the tray payload (exe + deps + icons).
+          Windows-only (net8.0-windows, WinForms), so the MSI is
+          effectively Windows-build-only.
+        - 3CXStatusTray.Installer.CustomActions supplies the managed
+          Custom Action DLL used to write appsettings.json at install time.
+    -->
+    <ProjectReference Include="..\3CXStatusTray\3CXStatusTray.csproj">
+      <Properties>Configuration=$(Configuration);Platform=AnyCPU</Properties>
+    </ProjectReference>
+    <ProjectReference Include="..\3CXStatusTray.Installer.CustomActions\3CXStatusTray.Installer.CustomActions.csproj">
+      <Properties>Configuration=$(Configuration);Platform=AnyCPU</Properties>
+    </ProjectReference>
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,197 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
+     xmlns:netfx="http://wixtoolset.org/schemas/v4/wxs/netfx">
+
+  <!--
+    3CX Status Tray MSI. Decisions captured in docs/installer-design.md.
+
+    UpgradeCode must NEVER change across versions - it's how MSI identifies
+    "the same product" for upgrade purposes. Generated 2026-04-20. If you
+    regenerate this by accident, existing installs will become un-upgradeable.
+  -->
+  <Package Name="3CX Status Tray"
+           Manufacturer="Wharfs"
+           Version="$(var.Version)"
+           UpgradeCode="79eabc17-d2d6-46a5-8fa4-2ba2ae1f8a71"
+           Scope="perMachine"
+           Compressed="yes"
+           InstallerVersion="500">
+
+    <SummaryInformation Description="3CX Status Tray installer"
+                        Manufacturer="Wharfs" />
+
+    <MajorUpgrade AllowSameVersionUpgrades="yes"
+                  DowngradeErrorMessage="A newer version of 3CX Status Tray is already installed." />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <!--
+      .NET 8 Desktop Runtime check. netfx:DotNetCompatibilityCheck sets
+      a property to the negotiated framework version when the runtime is
+      present; the Launch condition gates the install on it.
+    -->
+    <netfx:DotNetCompatibilityCheck Property="DOTNETDESKTOP8"
+                                    RuntimeType="desktop"
+                                    Platform="x64"
+                                    Version="8.0.0" />
+    <Launch Condition="Installed OR DOTNETDESKTOP8"
+            Message="This application requires the .NET 8 Desktop Runtime (x64). Install it from https://dotnet.microsoft.com/download/dotnet/8.0 and run this installer again." />
+
+    <!--
+      Upgrade memory: read previously-stored values back into MSI properties
+      before the UI runs. Effect: interactive upgrade pre-populates the
+      dialog with the previous install's settings; silent upgrade with no
+      properties reuses the previous values; silent upgrade with explicit
+      properties overrides.
+    -->
+    <Property Id="SERVER_URL" Value="http://localhost:8889/">
+      <RegistrySearch Id="RegSearchServerUrl"
+                      Root="HKLM"
+                      Key="Software\3CXStatusTray\Config"
+                      Name="ServerUrl"
+                      Type="raw" />
+    </Property>
+    <Property Id="API_KEY" Secure="yes">
+      <RegistrySearch Id="RegSearchApiKey"
+                      Root="HKLM"
+                      Key="Software\3CXStatusTray\Config"
+                      Name="ApiKey"
+                      Type="raw" />
+    </Property>
+    <Property Id="EXTENSION_ID" Value="100">
+      <RegistrySearch Id="RegSearchExtensionId"
+                      Root="HKLM"
+                      Key="Software\3CXStatusTray\Config"
+                      Name="ExtensionId"
+                      Type="raw" />
+    </Property>
+    <Property Id="POLL_INTERVAL_MS" Value="5000">
+      <RegistrySearch Id="RegSearchPollInterval"
+                      Root="HKLM"
+                      Key="Software\3CXStatusTray\Config"
+                      Name="PollIntervalMs"
+                      Type="raw" />
+    </Property>
+
+    <!-- Directory structure -->
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="3CXStatusTray" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="AppShortcutFolder" Name="3CX Status Tray" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="StartupFolder" />
+
+    <Icon Id="AppIcon.ico" SourceFile="..\3CXStatusTray\icons\app-default.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/Wharfs/3CXStatusTray" />
+
+    <!-- Features -->
+    <Feature Id="Main" Title="3CX Status Tray" Level="1" Display="expand">
+      <ComponentGroupRef Id="TrayPayload" />
+      <ComponentRef Id="UpgradeMemoryRegistry" />
+      <ComponentRef Id="StartMenuShortcut" />
+      <ComponentRef Id="StartupShortcut" />
+    </Feature>
+
+    <!--
+      Harvest the tray's build output via <Files>. The tray's csproj
+      sets CopyToOutputDirectory on appsettings.json and the icons, so
+      they sit alongside the exe and .NET dependency DLLs in the build
+      output folder. Exclude appsettings.json and *.pdb - the Custom
+      Action writes a fresh appsettings.json, and .pdb files are
+      debug symbols we don't want shipping to end-user machines.
+    -->
+    <Fragment>
+      <ComponentGroup Id="TrayPayload" Directory="INSTALLFOLDER">
+        <Files Include="$(var.3CXStatusTray.TargetDir)**\*">
+          <Exclude Files="$(var.3CXStatusTray.TargetDir)appsettings.json" />
+          <Exclude Files="$(var.3CXStatusTray.TargetDir)**\*.pdb" />
+        </Files>
+      </ComponentGroup>
+    </Fragment>
+
+    <!--
+      Registry component for the upgrade-memory subtree. Needs an explicit
+      component (not just the custom action's runtime writes) so uninstall
+      can clean up properly.
+    -->
+    <Component Id="UpgradeMemoryRegistry" Directory="INSTALLFOLDER"
+               Guid="19875e9c-7959-4109-a5f0-316ae93993e0">
+      <RegistryKey Root="HKLM" Key="Software\3CXStatusTray\Config" ForceDeleteOnUninstall="yes">
+        <RegistryValue Name="InstallMarker" Value="1" Type="integer" KeyPath="yes" />
+      </RegistryKey>
+    </Component>
+
+    <!-- Start Menu shortcut -->
+    <Component Id="StartMenuShortcut" Directory="AppShortcutFolder"
+               Guid="9f1b2eb9-9b4c-4298-98ce-fe8a0770107d">
+      <Shortcut Id="StartMenuShortcutLnk"
+                Name="3CX Status Tray"
+                Description="Phone status tray applet"
+                Target="[INSTALLFOLDER]3CXStatusTray.exe"
+                WorkingDirectory="INSTALLFOLDER"
+                Icon="AppIcon.ico" />
+      <RemoveFolder Id="RemoveAppShortcutFolder" On="uninstall" />
+      <RegistryValue Root="HKLM"
+                     Key="Software\3CXStatusTray\Install"
+                     Name="StartMenuShortcutInstalled"
+                     Type="integer"
+                     Value="1"
+                     KeyPath="yes" />
+    </Component>
+
+    <!-- All-users Startup folder shortcut (autostart) -->
+    <Component Id="StartupShortcut" Directory="StartupFolder"
+               Guid="cc563e3a-e968-43fc-84ad-1a6fd496f1e7">
+      <Shortcut Id="StartupShortcutLnk"
+                Name="3CX Status Tray"
+                Target="[INSTALLFOLDER]3CXStatusTray.exe"
+                WorkingDirectory="INSTALLFOLDER"
+                Icon="AppIcon.ico" />
+      <RegistryValue Root="HKLM"
+                     Key="Software\3CXStatusTray\Install"
+                     Name="StartupShortcutInstalled"
+                     Type="integer"
+                     Value="1"
+                     KeyPath="yes" />
+    </Component>
+
+    <!-- Custom Action wiring -->
+    <Binary Id="WriteAppSettingsCA"
+            SourceFile="$(var.3CXStatusTray.Installer.CustomActions.TargetPath)" />
+
+    <!--
+      CustomActionData is how deferred CAs receive MSI property values:
+      an immediate-mode SetProperty CA (SetWriteAppSettingsData) packages
+      them into a single semi-colon-separated string under the name of the
+      deferred CA, then the deferred CA deserialises it via Session.CustomActionData.
+    -->
+    <SetProperty Id="SetWriteAppSettingsData"
+                 Action="SetWriteAppSettingsData"
+                 Value="INSTALLFOLDER=[INSTALLFOLDER];SERVER_URL=[SERVER_URL];API_KEY=[API_KEY];EXTENSION_ID=[EXTENSION_ID];POLL_INTERVAL_MS=[POLL_INTERVAL_MS]"
+                 Before="WriteAppSettings"
+                 Sequence="execute">NOT REMOVE</SetProperty>
+
+    <CustomAction Id="WriteAppSettings"
+                  BinaryRef="WriteAppSettingsCA"
+                  DllEntry="WriteAppSettings"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="check" />
+
+    <InstallExecuteSequence>
+      <Custom Action="SetWriteAppSettingsData" Before="WriteAppSettings" Condition="NOT REMOVE" />
+      <Custom Action="WriteAppSettings" After="InstallFiles" Condition="NOT REMOVE" />
+    </InstallExecuteSequence>
+
+    <!-- UI: built-in WixUI_InstallDir extended with our ConfigDialog (see Dialogs/ConfigDialog.wxs) -->
+    <ui:WixUI Id="WixUI_InstallDir" />
+    <UIRef Id="ConfigDialogUI" />
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+
+  </Package>
+</Wix>
