@@ -123,7 +123,13 @@
       </RegistryKey>
     </Component>
 
-    <!-- Start Menu shortcut -->
+    <!--
+      Start Menu shortcut. KeyPath HAS to be HKCU per ICE38/ICE43 even
+      though the shortcut is placed in the all-users Start Menu. Windows
+      Installer treats shortcut directories as "per-user" for component-
+      tracking purposes, irrespective of where the shortcut actually
+      lands on disk.
+    -->
     <Component Id="StartMenuShortcut" Directory="AppShortcutFolder"
                Guid="9f1b2eb9-9b4c-4298-98ce-fe8a0770107d">
       <Shortcut Id="StartMenuShortcutLnk"
@@ -133,15 +139,15 @@
                 WorkingDirectory="INSTALLFOLDER"
                 Icon="AppIcon.ico" />
       <RemoveFolder Id="RemoveAppShortcutFolder" On="uninstall" />
-      <RegistryValue Root="HKLM"
-                     Key="Software\3CXStatusTray\Install"
+      <RegistryValue Root="HKCU"
+                     Key="Software\3CXStatusTray"
                      Name="StartMenuShortcutInstalled"
                      Type="integer"
                      Value="1"
                      KeyPath="yes" />
     </Component>
 
-    <!-- All-users Startup folder shortcut (autostart) -->
+    <!-- All-users Startup folder shortcut (autostart). Same HKCU KeyPath quirk. -->
     <Component Id="StartupShortcut" Directory="StartupFolder"
                Guid="cc563e3a-e968-43fc-84ad-1a6fd496f1e7">
       <Shortcut Id="StartupShortcutLnk"
@@ -149,8 +155,8 @@
                 Target="[INSTALLFOLDER]3CXStatusTray.exe"
                 WorkingDirectory="INSTALLFOLDER"
                 Icon="AppIcon.ico" />
-      <RegistryValue Root="HKLM"
-                     Key="Software\3CXStatusTray\Install"
+      <RegistryValue Root="HKCU"
+                     Key="Software\3CXStatusTray"
                      Name="StartupShortcutInstalled"
                      Type="integer"
                      Value="1"
