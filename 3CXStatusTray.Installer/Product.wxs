@@ -232,11 +232,18 @@
       silent installs are typically scripted en masse and you don't want
       a tray icon to appear on the admin's own desktop for every client.
     -->
-    <Property Id="WixShellExecTarget" Value="[#3CXStatusTray.exe]" />
+    <!--
+      Directly shell-exec the installed tray as the user who ran the
+      installer. Simpler than WixShellExec (no util extension dependency,
+      no WixShellExecTarget property routing). Return=asyncNoWait means
+      the installer doesn't block on the tray's message loop; the CA
+      fires the launch and returns immediately.
+    -->
     <CustomAction Id="LaunchApplication"
-                  BinaryRef="Wix4UtilCA_X86"
-                  DllEntry="WixShellExec"
-                  Impersonate="yes" />
+                  Directory="INSTALLFOLDER"
+                  ExeCommand='"[INSTALLFOLDER]3CXStatusTray.exe"'
+                  Impersonate="yes"
+                  Return="asyncNoWait" />
 
     <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
     <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch 3CX Status Tray" />
