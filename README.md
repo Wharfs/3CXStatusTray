@@ -31,8 +31,8 @@ So a desktop tray icon that's simultaneously:
 
 ```
 ┌──────────────────────┐    poll every 5s       ┌──────────────────┐   COM    ┌───────┐
-│  Tray (one per desk) │ ─────────────────────▶│ 3CXStatusWebApi  │ ────────▶│  3CX  │
-│  x N desks           │ ◀─────────────────────│   (on PBX host)  │          │  PBX  │
+│  Tray (one per desk) │ ---------------------> │ 3CXStatusWebApi  │ -------> │  3CX  │
+│  x N desks           │ <--------------------- │   (on PBX host)  │          │  PBX  │
 └──────────────────────┘    toggle on click     └──────────────────┘          └───────┘
 ```
 
