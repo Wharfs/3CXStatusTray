@@ -224,5 +224,30 @@
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
     <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
 
+    <!--
+      Launch-on-finish. Adds a 'Launch 3CX Status Tray' checkbox to the
+      ExitDialog, pre-ticked, that runs the exe impersonated as the user
+      who invoked the installer. Skipped entirely for silent installs
+      (no UI = no checkbox = no DoAction trigger), which is a feature:
+      silent installs are typically scripted en masse and you don't want
+      a tray icon to appear on the admin's own desktop for every client.
+    -->
+    <Property Id="WixShellExecTarget" Value="[#3CXStatusTray.exe]" />
+    <CustomAction Id="LaunchApplication"
+                  BinaryRef="Wix4UtilCA_X86"
+                  DllEntry="WixShellExec"
+                  Impersonate="yes"
+                  Return="asyncNoWait" />
+
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch 3CX Status Tray" />
+
+    <ui:Publish Dialog="ExitDialog"
+                Control="Finish"
+                Event="DoAction"
+                Value="LaunchApplication"
+                Order="999"
+                Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed" />
+
   </Package>
 </Wix>
