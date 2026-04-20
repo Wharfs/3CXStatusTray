@@ -14,7 +14,14 @@
     <Content Include="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <!--
+      Flatten icons into the output root (not preserving the icons\ subfolder)
+      so `new Icon("app-default.ico")` resolves relative to the exe's folder.
+      Matches how the .exe has historically been deployed - everything sits
+      next to the exe in one flat install dir.
+    -->
     <Content Include="icons\*.ico">
+      <Link>%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
