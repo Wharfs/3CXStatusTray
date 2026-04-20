@@ -18,8 +18,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!--
+      WixToolset.Dtf.CustomAction is the ONLY NuGet dep on purpose. Anything
+      else we pull in here (e.g. System.Text.Json) has transitive deps
+      (System.Memory, System.Buffers, ...) that MakeSfxCA has to bundle into
+      the self-extracting CA container, and that part is fragile - missing
+      a dep manifests at install time as MSI error 1723 'A DLL required for
+      this install to complete could not be run'. Keeping this project
+      framework-only means there is nothing extra to bundle.
+    -->
     <PackageReference Include="WixToolset.Dtf.CustomAction" Version="6.0.2" />
-    <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
 
 </Project>
