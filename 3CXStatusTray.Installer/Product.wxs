@@ -193,7 +193,15 @@
       log, honours the Return="check" setting so non-zero exit codes
       fail the install.
     -->
-    <SetProperty Id="WixQuietExec64CmdLine"
+    <!--
+      SetProperty Id MUST match the deferred CA Id ('WriteAppSettings').
+      That's how MSI wires the value through: for a deferred CA, its
+      Session.CustomActionData is auto-populated from the property whose
+      name matches the action name. Using any other property name (e.g.
+      WixQuietExec64CmdLine) means the CA can't find its input and
+      fails with 0x80070057 "Failed to get command line data".
+    -->
+    <SetProperty Id="WriteAppSettings"
                  Value='"[System64Folder]WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "[#ConfigureAppSettingsPs1]" -InstallFolder "[INSTALLFOLDER]" -ServerUrl "[SERVER_URL]" -ApiKey "[API_KEY]" -ExtensionId "[EXTENSION_ID]" -PollIntervalMs [POLL_INTERVAL_MS]'
                  Before="WriteAppSettings"
                  Sequence="execute"
