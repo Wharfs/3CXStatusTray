@@ -27,6 +27,23 @@
     <MediaTemplate EmbedCab="yes" />
 
     <!--
+      If a 3CXStatusTray.exe is running when the installer starts (upgrade
+      scenario), politely close it before file operations. Without this,
+      Windows Installer's Restart Manager notices the EXE is in use, asks
+      the user about it, proceeds ambivalently, and sometimes leaves the
+      install in a half-applied state with a stale process still around.
+      TerminateProcess=3 = send WM_CLOSE, wait up to 3 seconds for graceful
+      shutdown, force-kill after that if still running.
+    -->
+    <util:CloseApplication
+        Id="CloseExistingTray"
+        Target="3CXStatusTray.exe"
+        CloseMessage="yes"
+        ElevatedCloseMessage="yes"
+        RebootPrompt="no"
+        TerminateProcess="3" />
+
+    <!--
       .NET 8 Desktop Runtime check. netfx:DotNetCompatibilityCheck sets
       a property to the negotiated framework version when the runtime is
       present; the Launch condition gates the install on it.
