@@ -2,7 +2,9 @@
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
-/.vs
-3CXStatusTray/bin/Debug
-3CXStatusTray/obj
+/.vs/
+**/bin/
+**/obj/
+**/*.user
+**/TestResults/
 3CXStatusTray/3cxpscomcpp2.dll
