@@ -104,14 +104,12 @@
       Action writes a fresh appsettings.json, and .pdb files are
       debug symbols we don't want shipping to end-user machines.
     -->
-    <Fragment>
-      <ComponentGroup Id="TrayPayload" Directory="INSTALLFOLDER">
-        <Files Include="$(var.TrayBuildDir)**\*">
-          <Exclude Files="$(var.TrayBuildDir)appsettings.json" />
-          <Exclude Files="$(var.TrayBuildDir)**\*.pdb" />
-        </Files>
-      </ComponentGroup>
-    </Fragment>
+    <ComponentGroup Id="TrayPayload" Directory="INSTALLFOLDER">
+      <Files Include="$(var.TrayBuildDir)**\*">
+        <Exclude Files="$(var.TrayBuildDir)appsettings.json" />
+        <Exclude Files="$(var.TrayBuildDir)**\*.pdb" />
+      </Files>
+    </ComponentGroup>
 
     <!--
       Registry component for the upgrade-memory subtree. Needs an explicit
@@ -163,16 +161,22 @@
     <Binary Id="WriteAppSettingsCA" SourceFile="$(var.CustomActionDll)" />
 
     <!--
-      CustomActionData is how deferred CAs receive MSI property values:
-      an immediate-mode SetProperty CA (SetWriteAppSettingsData) packages
-      them into a single semi-colon-separated string under the name of the
-      deferred CA, then the deferred CA deserialises it via Session.CustomActionData.
+      Deferred CAs can't read MSI properties directly - they run in an
+      isolated context for security/elevation reasons. The pattern is:
+        1. Schedule an immediate-mode SetProperty action that writes a
+           single semi-colon-separated string into a property named the
+           same as the deferred CA ('WriteAppSettings').
+        2. The deferred CA reads session.CustomActionData, which MSI
+           auto-populates from that property at the moment it runs.
+
+      SetProperty.Id matches the deferred CA Id, which is load-bearing:
+      MSI uses that name as the CustomActionData property name.
     -->
-    <SetProperty Id="SetWriteAppSettingsData"
-                 Action="SetWriteAppSettingsData"
+    <SetProperty Id="WriteAppSettings"
                  Value="INSTALLFOLDER=[INSTALLFOLDER];SERVER_URL=[SERVER_URL];API_KEY=[API_KEY];EXTENSION_ID=[EXTENSION_ID];POLL_INTERVAL_MS=[POLL_INTERVAL_MS]"
                  Before="WriteAppSettings"
-                 Sequence="execute">NOT REMOVE</SetProperty>
+                 Sequence="execute"
+                 Condition="NOT REMOVE" />
 
     <CustomAction Id="WriteAppSettings"
                   BinaryRef="WriteAppSettingsCA"
@@ -182,7 +186,6 @@
                   Return="check" />
 
     <InstallExecuteSequence>
-      <Custom Action="SetWriteAppSettingsData" Before="WriteAppSettings" Condition="NOT REMOVE" />
       <Custom Action="WriteAppSettings" After="InstallFiles" Condition="NOT REMOVE" />
     </InstallExecuteSequence>
 
