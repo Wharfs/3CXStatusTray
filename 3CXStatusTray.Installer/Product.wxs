@@ -1,5 +1,6 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
      xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util"
      xmlns:netfx="http://wixtoolset.org/schemas/v4/wxs/netfx">
 
   <!--
@@ -91,6 +92,7 @@
     <!-- Features -->
     <Feature Id="Main" Title="3CX Status Tray" Level="1" Display="expand">
       <ComponentGroupRef Id="TrayPayload" />
+      <ComponentRef Id="ConfigureScript" />
       <ComponentRef Id="UpgradeMemoryRegistry" />
       <ComponentRef Id="StartMenuShortcut" />
       <ComponentRef Id="StartupShortcut" />
@@ -110,6 +112,18 @@
         <Exclude Files="$(var.TrayBuildDir)**\*.pdb" />
       </Files>
     </ComponentGroup>
+
+    <!--
+      The PowerShell script that writes appsettings.json + upgrade-memory
+      registry values at install time. Bundled in the MSI and placed into
+      INSTALLFOLDER so the deferred CA can invoke it by absolute path.
+    -->
+    <Component Id="ConfigureScript" Directory="INSTALLFOLDER"
+               Guid="0cbdb7e2-1e44-4a17-b1e3-3c9b65c6c3d1">
+      <File Id="ConfigureAppSettingsPs1"
+            Source="ConfigureAppSettings.ps1"
+            KeyPath="yes" />
+    </Component>
 
     <!--
       Registry component for the upgrade-memory subtree. Needs an explicit
@@ -163,30 +177,31 @@
                      KeyPath="yes" />
     </Component>
 
-    <!-- Custom Action wiring -->
-    <Binary Id="WriteAppSettingsCA" SourceFile="$(var.CustomActionDll)" />
-
     <!--
-      Deferred CAs can't read MSI properties directly - they run in an
-      isolated context for security/elevation reasons. The pattern is:
-        1. Schedule an immediate-mode SetProperty action that writes a
-           single semi-colon-separated string into a property named the
-           same as the deferred CA ('WriteAppSettings').
-        2. The deferred CA reads session.CustomActionData, which MSI
-           auto-populates from that property at the moment it runs.
+      Configure appsettings.json via a PowerShell deferred Custom Action.
 
-      SetProperty.Id matches the deferred CA Id, which is load-bearing:
-      MSI uses that name as the CustomActionData property name.
+      Two-step pattern required by MSI for deferred CAs:
+        1. SetProperty (immediate mode) builds the full command line from
+           MSI properties and stuffs it into a property that happens to
+           share a name with the deferred CA.
+        2. The deferred CA itself (BinaryRef=Wix4UtilCA_X64, DllEntry=
+           WixQuietExec64) pulls that command line out of CustomActionData
+           at deferred-execute time, then shells out to PowerShell.
+
+      WixQuietExec64 is the 64-bit silent-exec helper in Util.wixext:
+      runs the command to completion, pipes stdout/stderr to the MSI
+      log, honours the Return="check" setting so non-zero exit codes
+      fail the install.
     -->
-    <SetProperty Id="WriteAppSettings"
-                 Value="INSTALLFOLDER=[INSTALLFOLDER];SERVER_URL=[SERVER_URL];API_KEY=[API_KEY];EXTENSION_ID=[EXTENSION_ID];POLL_INTERVAL_MS=[POLL_INTERVAL_MS]"
+    <SetProperty Id="WixQuietExec64CmdLine"
+                 Value='"[System64Folder]WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "[#ConfigureAppSettingsPs1]" -InstallFolder "[INSTALLFOLDER]" -ServerUrl "[SERVER_URL]" -ApiKey "[API_KEY]" -ExtensionId "[EXTENSION_ID]" -PollIntervalMs [POLL_INTERVAL_MS]'
                  Before="WriteAppSettings"
                  Sequence="execute"
                  Condition="NOT REMOVE" />
 
     <CustomAction Id="WriteAppSettings"
-                  BinaryRef="WriteAppSettingsCA"
-                  DllEntry="WriteAppSettings"
+                  BinaryRef="Wix4UtilCA_X64"
+                  DllEntry="WixQuietExec64"
                   Execute="deferred"
                   Impersonate="no"
                   Return="check" />

@@ -14,8 +14,7 @@
       them manually here; referenced as $(var.Name) inside .wxs files.
     -->
     <TrayBuildDir>$(MSBuildThisFileDirectory)..\3CXStatusTray\bin\$(Configuration)\net8.0-windows\</TrayBuildDir>
-    <CustomActionDll>$(MSBuildThisFileDirectory)..\3CXStatusTray.Installer.CustomActions\bin\$(Configuration)\net472\WriteAppSettings.CA.dll</CustomActionDll>
-    <DefineConstants>Version=$(Version);TrayBuildDir=$(TrayBuildDir);CustomActionDll=$(CustomActionDll)</DefineConstants>
+    <DefineConstants>Version=$(Version);TrayBuildDir=$(TrayBuildDir)</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,17 +25,13 @@
 
   <ItemGroup>
     <!--
-      Both project references are required to build the MSI:
-        - 3CXStatusTray supplies the tray payload (exe + deps + icons).
-          Windows-only (net8.0-windows, WinForms), so the MSI is
-          effectively Windows-build-only.
-        - 3CXStatusTray.Installer.CustomActions supplies the managed
-          Custom Action DLL used to write appsettings.json at install time.
+      The tray supplies the payload (exe + deps + icons). Windows-only
+      (net8.0-windows, WinForms), so the MSI is effectively Windows-build-only.
+      Configuration of appsettings.json at install time is done by
+      ConfigureAppSettings.ps1 via a PowerShell Custom Action - no managed
+      Custom Action project, no WiX DTF SfxCA packaging.
     -->
     <ProjectReference Include="..\3CXStatusTray\3CXStatusTray.csproj">
-      <Properties>Configuration=$(Configuration);Platform=AnyCPU</Properties>
-    </ProjectReference>
-    <ProjectReference Include="..\3CXStatusTray.Installer.CustomActions\3CXStatusTray.Installer.CustomActions.csproj">
       <Properties>Configuration=$(Configuration);Platform=AnyCPU</Properties>
     </ProjectReference>
   </ItemGroup>

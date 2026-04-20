@@ -5,10 +5,6 @@ VisualStudioVersion = 17.3.32819.101
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "3CXStatusTray", "3CXStatusTray\3CXStatusTray.csproj", "{C0771250-F901-45C9-8695-AC93DD715872}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "3CXStatusTray.Installer.CustomActions", "3CXStatusTray.Installer.CustomActions\3CXStatusTray.Installer.CustomActions.csproj", "{C4EA61D9-EFE4-41BF-8B0A-2EA140191075}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "3CXStatusTray.Installer.CustomActions.Tests", "3CXStatusTray.Installer.CustomActions.Tests\3CXStatusTray.Installer.CustomActions.Tests.csproj", "{B273F526-F375-4ED6-BD1F-BB83F0ABFCBB}"
-EndProject
 Project("{B7DD6F7E-DEF8-4E67-B5B7-07EF123DB6F0}") = "3CXStatusTray.Installer", "3CXStatusTray.Installer\3CXStatusTray.Installer.wixproj", "{3DE7B3D6-3CC2-4B88-85B4-85CC2FB16339}"
 EndProject
 Global
@@ -21,14 +17,6 @@ Global
 		{C0771250-F901-45C9-8695-AC93DD715872}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C0771250-F901-45C9-8695-AC93DD715872}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C0771250-F901-45C9-8695-AC93DD715872}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C4EA61D9-EFE4-41BF-8B0A-2EA140191075}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C4EA61D9-EFE4-41BF-8B0A-2EA140191075}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C4EA61D9-EFE4-41BF-8B0A-2EA140191075}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C4EA61D9-EFE4-41BF-8B0A-2EA140191075}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B273F526-F375-4ED6-BD1F-BB83F0ABFCBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B273F526-F375-4ED6-BD1F-BB83F0ABFCBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B273F526-F375-4ED6-BD1F-BB83F0ABFCBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B273F526-F375-4ED6-BD1F-BB83F0ABFCBB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3DE7B3D6-3CC2-4B88-85B4-85CC2FB16339}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3DE7B3D6-3CC2-4B88-85B4-85CC2FB16339}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3DE7B3D6-3CC2-4B88-85B4-85CC2FB16339}.Release|Any CPU.ActiveCfg = Release|Any CPU

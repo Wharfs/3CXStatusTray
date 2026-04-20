@@ -41,12 +41,7 @@ Step "Restoring NuGet packages"
 dotnet restore
 
 if (-not $SkipTests) {
-  Step "Running Custom Action unit tests"
-  dotnet test 3CXStatusTray.Installer.CustomActions.Tests -c $Configuration --nologo
-  if ($LASTEXITCODE -ne 0) {
-    Write-Host "Tests failed - aborting build." -ForegroundColor Red
-    exit 1
-  }
+  Step "No unit tests to run (installer uses a PowerShell CA, no managed code to test)"
 }
 
 Step "Building solution ($Configuration)"
