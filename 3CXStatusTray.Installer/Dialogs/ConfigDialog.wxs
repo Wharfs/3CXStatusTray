@@ -44,12 +44,12 @@
                  Text="Set the WebApi URL the tray will poll, and an optional API key." />
 
         <Control Id="ServerUrlLabel" Type="Text" X="45" Y="65" Width="280" Height="12"
-                 NoPrefix="yes" Text="3CX Status &amp;WebApi URL:" />
+                 NoPrefix="yes" Text="3CX Status WebApi URL:" />
         <Control Id="ServerUrlEdit" Type="Edit" X="45" Y="80" Width="280" Height="18"
                  Property="SERVER_URL" Text="{200}" />
 
         <Control Id="ApiKeyLabel" Type="Text" X="45" Y="112" Width="280" Height="12"
-                 NoPrefix="yes" Text="API &amp;Key (optional):" />
+                 NoPrefix="yes" Text="API Key (optional):" />
         <Control Id="ApiKeyEdit" Type="Edit" X="45" Y="127" Width="280" Height="18"
                  Property="API_KEY" Text="{200}" />
 
