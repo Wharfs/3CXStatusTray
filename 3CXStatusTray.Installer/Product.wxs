@@ -202,7 +202,7 @@
       fails with 0x80070057 "Failed to get command line data".
     -->
     <SetProperty Id="WriteAppSettings"
-                 Value='"[System64Folder]WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "[#ConfigureAppSettingsPs1]" -InstallFolder "[INSTALLFOLDER]" -ServerUrl "[SERVER_URL]" -ApiKey "[API_KEY]" -ExtensionId "[EXTENSION_ID]" -PollIntervalMs [POLL_INTERVAL_MS]'
+                 Value='"[System64Folder]WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "[#ConfigureAppSettingsPs1]" -ServerUrl "[SERVER_URL]" -ApiKey "[API_KEY]" -ExtensionId "[EXTENSION_ID]" -PollIntervalMs [POLL_INTERVAL_MS]'
                  Before="WriteAppSettings"
                  Sequence="execute"
                  Condition="NOT REMOVE" />

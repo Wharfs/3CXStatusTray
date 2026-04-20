@@ -10,13 +10,18 @@
   so the next install's <RegistrySearch> can pre-populate the dialog
   fields (that's the "upgrade memory" feature from the design doc).
 
+  Script determines its own install folder via $PSScriptRoot rather than
+  receiving it as an argument - the MSI [INSTALLFOLDER] token ends with
+  a backslash, which interacts badly with CreateProcess argument quoting
+  and leaves PowerShell with a trailing '"' that makes all path ops throw
+  'Illegal characters in path'. $PSScriptRoot is always clean.
+
   Run by the MSI as LocalSystem - don't depend on user profile, cwd,
   env vars, or network paths.
 #>
 
 [CmdletBinding()]
 param(
-  [Parameter(Mandatory = $true)] [string] $InstallFolder,
   [string] $ServerUrl     = 'http://localhost:8889/',
   [string] $ApiKey        = '',
   [string] $ExtensionId   = '100',
@@ -24,16 +29,9 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$InstallFolder = $PSScriptRoot
 
-# MSI's [INSTALLFOLDER] always ends with a backslash, e.g.
-#   "C:\Program Files\3CXStatusTray\"
-# When that gets through CreateProcess arg parsing, '\"' is treated as
-# an escaped quote and the string arrives here as
-#   C:\Program Files\3CXStatusTray"
-# with a trailing literal double-quote. That's an illegal path char, so
-# any file operation against it throws 'Illegal characters in path'.
-# Strip any trailing quote/backslash noise before use.
-$InstallFolder = $InstallFolder.TrimEnd('"', '\')
+Write-Output "ConfigureAppSettings: InstallFolder=$InstallFolder  ServerUrl=$ServerUrl  ExtensionId=$ExtensionId  PollIntervalMs=$PollIntervalMs"
 
 $settings = [ordered]@{
   Settings = [ordered]@{
@@ -57,6 +55,7 @@ $settings = [ordered]@{
 $json = $settings | ConvertTo-Json -Depth 5
 $appSettingsPath = Join-Path $InstallFolder 'appsettings.json'
 Set-Content -Path $appSettingsPath -Value $json -Encoding UTF8
+Write-Output "ConfigureAppSettings: wrote $appSettingsPath"
 
 # Upgrade-memory registry values. Read back next install via
 # <RegistrySearch> in Product.wxs.
@@ -68,3 +67,4 @@ Set-ItemProperty -Path $regPath -Name 'ServerUrl'     -Value $ServerUrl
 Set-ItemProperty -Path $regPath -Name 'ApiKey'        -Value $ApiKey
 Set-ItemProperty -Path $regPath -Name 'ExtensionId'   -Value $ExtensionId
 Set-ItemProperty -Path $regPath -Name 'PollIntervalMs' -Value $PollIntervalMs
+Write-Output "ConfigureAppSettings: wrote upgrade-memory registry under $regPath"
