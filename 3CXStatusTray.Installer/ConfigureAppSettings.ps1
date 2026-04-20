@@ -25,6 +25,16 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# MSI's [INSTALLFOLDER] always ends with a backslash, e.g.
+#   "C:\Program Files\3CXStatusTray\"
+# When that gets through CreateProcess arg parsing, '\"' is treated as
+# an escaped quote and the string arrives here as
+#   C:\Program Files\3CXStatusTray"
+# with a trailing literal double-quote. That's an illegal path char, so
+# any file operation against it throws 'Illegal characters in path'.
+# Strip any trailing quote/backslash noise before use.
+$InstallFolder = $InstallFolder.TrimEnd('"', '\')
+
 $settings = [ordered]@{
   Settings = [ordered]@{
     ServerURLBasePath             = $ServerUrl
