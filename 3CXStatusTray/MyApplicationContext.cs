@@ -61,10 +61,10 @@ internal sealed class MyApplicationContext : ApplicationContext
         exitItem.Click += (_, _) =>
         {
             var answer = MessageBox.Show(
-                "Do you really want to close me?",
-                "Are you sure?",
+                "Close the tray? The phones indicator and toggle won't work on this desk until it's running again.",
+                "Exit 3CX Status Tray",
                 MessageBoxButtons.YesNo,
-                MessageBoxIcon.Exclamation,
+                MessageBoxIcon.Warning,
                 MessageBoxDefaultButton.Button2);
             if (answer == DialogResult.Yes)
             {
